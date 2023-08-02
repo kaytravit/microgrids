@@ -20,7 +20,11 @@ plt.show()
 sns.lineplot(x='Data', y='Radiation', data=df)
 plt.show()
 
+df.plot(x='Data', y='Radiation', figsize=(15, 5))
+plt.show()
+
 #grafico entre estação do ano e radiação solar
 sns.lineplot(x='Estação do Ano', y='Radiation', data=df)   
 plt.show()
+
 
