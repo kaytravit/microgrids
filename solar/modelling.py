@@ -4,9 +4,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import xgboost as xgb
 
-
 df = pd.read_csv('solar_tratado.csv')
 df['Data'] = pd.to_datetime(df['Data'])  
+
+# Criar coluna com hora do Time, hora to TimeSunRise e hora do TimeSunSet
+df['Hora'] = df['Time'].apply(lambda x: int(x.split(':')[0]))
+df['HoraSunRise'] = df['TimeSunRise'].apply(lambda x: int(x.split(':')[0]))
+df['HoraSunSet'] = df['TimeSunSet'].apply(lambda x: int(x.split(':')[0]))
+
 df.sort_values(by='Data', ascending=True, inplace=True) 
 
 # Divisão treino e teste
@@ -45,32 +50,49 @@ porcentagem_teste = len(teste) / total_linhas * 100
 print(f"Porcentagem de dados de treino: {porcentagem_treino:.2f}%")
 print(f"Porcentagem de dados de teste: {porcentagem_teste:.2f}%")
 
-# Normalizar os dados
+# Importar a biblioteca necessária
 from sklearn.preprocessing import MinMaxScaler
 
+# Inicializar o objeto scaler
 scaler = MinMaxScaler()
-X_treino[:, :5] = scaler.fit_transform(X_treino[:, :5])
-X_teste[:, :5] = scaler.transform(X_teste[:, :5])
 
-# Convertendo novamente para DataFrame após a normalização
-X_treino = pd.DataFrame(X_treino, columns=X_treino.columns)
-X_teste = pd.DataFrame(X_teste, columns=X_teste.columns)
+# Obter os índices das primeiras 5 colunas dos dados de treino
+colunas_treino = X_treino.columns[:5]
+
+# Obter os índices das primeiras 5 colunas dos dados de teste
+colunas_teste = X_teste.columns[:5]
+
+# Normalizar as primeiras 5 colunas dos dados de treino
+X_treino[colunas_treino] = scaler.fit_transform(X_treino[colunas_treino])
+
+# Normalizar as primeiras 5 colunas dos dados de teste, usando os mesmos valores de escala que foram ajustados nos dados de treino
+X_teste[colunas_teste] = scaler.transform(X_teste[colunas_teste])
 
 # Treinar o modelo
 
 modelo_xgb = xgb.XGBRegressor(n_estimators = 1000)
 modelo_xgb.fit(X_treino, y_treino, eval_set = [(X_treino, y_treino), (X_teste, y_teste)], verbose=False)
 
-# Avaliar o modelo
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-
 y_pred = modelo_xgb.predict(X_teste)
 
 # Plot do gráfico real x predito
 plt.figure(figsize=(10, 6))
-plt.plot(y_teste, label='Real', color='blue')
-plt.plot(y_pred, label='Previsto', color='red')
+
+# Criar dois eixos (subplots)
+ax1 = plt.subplot(2, 1, 1)
+ax2 = plt.subplot(2, 1, 2)
+
+# Plotar o gráfico real no primeiro eixo
+ax1.plot(y_teste, label='Real', color='blue')
+ax1.set_ylabel('Valor Real')
+ax1.legend()
+
+# Plotar o gráfico previsto no segundo eixo
+ax2.plot(y_pred, label='Previsto', color='red')
+ax2.set_xlabel('Índice')
+ax2.set_ylabel('Valor Previsto')
+ax2.legend()
+
 plt.show()
 
 # Plotar a importância dos recursos
